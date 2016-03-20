@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+<meta name='viewport' content='width=device-width, initial-scale=1.0, user-scalable=0'>
+<title>Friends and Family.</title>
+<link href='https://fonts.googleapis.com/css?family=Kaushan+Script|Yellowtail'
+   rel='stylesheet' type='text/css'><link rel="stylesheet" href="/ff/m/ff.css" type="text/css" media="screen">
+<script src="/script/jquery.min.js" type="text/javascript"></script>
+<script src="/script/jquery.form.js" type="text/javascript"></script>
+<script src="/script/tea.js"></script>
+<script src="/script/sha256.js"></script>
+<script src="ff.js"></script>
+<script type="text/javascript">
+var userInfo = {
+   logType: 0,
+   id: -1,
+   name: "",
+   thumbURL: "",
+   flags: 0,
+   ctToken: ""
+}
+var atInit = true;
+var updateContext = { id: 1, comment: false };
+var postContext = { id: 0, text: "" };
+var commentContext = { id: 0, lastp: null, text: "" };
+var interval1;
+var individual = -1;
+
+function restoreLast(state)
+{
+  alert(JSON.stringify(state));
+}
+
+function initialize()
+{
+   window.onpopstate = function(event) { changeState(event.state, []); return false; };
+
+   // Some stuff where it doesn't matter about the login state
+   $("#login_form").submit(function(event) {
+      event.preventDefault();
+      var isValid = true;
+
+      // do all your validation here
+      // potentially if one of the fields is empty
+      // isValid will be set to false
+
+      if (!isValid) return;
+      submitLogin();
+
+   });
+
+
+   checkLogin();
+   if (userInfo.logType > 0)
+   {
+      $('#slogtype').val(userInfo.logType);
+      $('#contribid').val(userInfo.id);
+      $('#exppic').val("N");
+      $('#exmpic').val("N");
+      $('#exid').val(userInfo.id);
+      $('#sdept').val(0);
+
+      $('#sfgo').click(function() { submitNewItem(); });
+      $('#status_form').ajaxForm({ success: function(rv) { addNewItem(rv); }, resetForm: true });
+
+      $('#exgo').click(function() { submitExtra(); });
+      $('#extra_form').ajaxForm({ success: function(rv) { extraSaved(rv); }, resetForm: true });
+
+      $('#reggo').click(function() { submitRegister(); });
+      $('#register_form').ajaxForm({ success: function(rv) { doBevRegister(rv); } });
+	   fixClix("trigger");
+      $('#dlgcontainer').hide();
+      $('#therest').show();
+      //$('#feed').show();
+      //$('#feedbody').show();
+      var a = location.href.split("?");
+      if (a.length == 1)
+         switch2feed();
+         //changeState("path=feed");
+      else
+         changeState(a[1])
+   }
+   else
+   {
+      mexDlgShow("logdlg");
+   }
+}
+
+$(function() {
+   initialize();
+});
+</script>
+</head>
+<body class="bodytxt">
+<div class="datadiv" id="appstate" data-container="" data-view="" data-component="" data-uid="0"></div>
+<noscript><h1 style="color:red;">! Javascript turned off, page will not work at all!</h1></noscript>
+<!--
+<div id="fb-root"></div>-->
+<div id="shield"></div>
+<div id="banner" style="overflow: hidden; white-space: nowrap; font-family:helvetica; font-style:italic; font-weight:800; font-size:14pt; color:#dddddd">
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF<br>
+&nbsp;&nbsp;FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF<br>
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+</div>
+<div style="font-family: 'Kaushan Script', cursive; font-size:30pt; position: absolute; left:4mm; top:3mm;">Teales' FnF
+<img id="working" src="working.gif" style="display:none;">
+</div>
+
+<div id="dlgcontainer" style="width:100%; display:block; overflow-y: hidden;">
+   <div id="logdlg" class="dialog formLayout mexdlg" style="display:block;">
+   <h2>Login is Required</h2>
+   <form id="login_form" method="post" enctype="text/plain" action="">
+   <label>User ID or Email:</label><br>
+   <input type="text" id="userid" name="userid" value=""><br>
+   <label>Password:</label><br><input type="password" id="pass" name="pass" value=""><br>
+   <label>Remember Me:</label><input type="checkbox"
+      style="font-size:20pt; padding:5px; float:right; width:20px; height:20px; margin:8px 20px 0 0;"
+      id="remember" name="remember" checked><br>
+   <div class="cancel-go">
+   <img class="dlgclose"
+      style="height:20px; width:20px; margin-top:5px; cursor:pointer;"
+      name="logdlg" id="closelog" src="/common/close.png">
+   <input type="submit" style="width:60%; float:right;" id="logingo" value="Log In" />
+   <!--<button type="button" id="logingo" onclick="submitLogin();">Log In</button>-->
+   </div>
+   </form>
+   </div>
+
+   <div id="regdlg" class="dialog formLayout mexdlg" style="display:block;">
+   <h2>Register a New Member</h2>
+   <form id="register_form" method="post" enctype="multipart/form-data" action="/ff/m/register.php">
+   <input type="hidden" id="regpic" name="regpic" value="">
+   <label>User ID:</label><br><input type="text" id="ruserid" name="userid" placeholder="Brief, for login" value=""><br>
+   <label>Display name:</label><br><input type="text" id="rusername" name="username" placeholder="e.g. John Doe" value=""><br>
+   <label>Password:</label><br><input type="password" id="rpass1" name="pass1" placeholder="6 chars min" value=""><br>
+   <label>Repeat password:</label><br><input type="password" id="rpass2" name="pass2" value=""><br>
+   <label>Email address:</label><br><input type="text" id="remail" name="remail" value=""><br>
+   <label>Repeat email:</label><br><input type="text" id="remail2" name="remail2" value=""><br>
+   <input type="file" style="display:none;" id="rmug" name="rmug" onchange="updateLabel(0);">
+   <span>Mugshot: </span>
+         <label id="rmuglabel" for="rmug" title="None chosen" style="cursor:pointer;">Choose</label>
+   <div class="cancel-go">
+   <img class="dlgclose"
+      style="height:20px; width:20px; margin-top:5px; cursor:pointer;"
+      id="closereg" src="/common/close.png" onclick="revert2members();">
+   <button type="button" id="reggo">Register</button>
+   </div>
+   </form>
+   </div>
+
+   <div id="extradlg" class="dialog formLayout mexdlg" data-loaded="N" data-cu="">
+   <h2>Modify User Details</h2>
+   <form id="extra_form" method="post" enctype="multipart/form-data" action="/ff/m/extradata.php">
+   <input type="hidden" id="exid" name="exid" value="">
+   <input type="hidden" id="exppic" name="exppic" value="N">
+   <input type="hidden" id="exmpic" name="exmpic" value="N">
+   <input type="hidden" id="excurrentpic" name="excurrentpic" value="">
+   <label>Phone:</label><br><input type="text" id="exphone" name="exphone" placeholder="+44 12345678" value=""><br>
+   <label>Email:</label><br><input type="text" id="exemail" name="exemail" value=""><br>
+   <label>Date of Birth:</label><br><input type="text" id="exdob" name="exdob" placeholder="Format 1990/02/29" value=""><br>
+   <label>Address 1:</label><br><input type="text" id="exaddress1" name="exaddress1" value=""><br>
+   <label>Address 2:</label><br><input type="text" id="exaddress2" name="exaddress2" value=""><br>
+   <label>City:</label><br><input type="text" id="excity" name="excity" value=""><br>
+   <label>Region:</label><br><input type="text" id="exregion" name="exregion" placeholder="State, region, or county" value=""><br>
+   <label>Postcode:</label><br><input type="text" id="expostcode" name="expostcode" value=""><br>
+   <label>Country:</label><br><input type="text" id="excountry" name="excountry" value=""><br>
+   <label>How RU:</label><br><input type="text" id="exhru" name="exhru" value=""><br>
+   <input type="file" style="display:none;" id="expic" name="expic" onchange="updateLabel(1);">
+   <span>Your Picture: </span><label id="excflabel" for="expic" title="None chosen" style="cursor: pointer;">Choose</label><br>
+   <input type="file" style="display:none;" id="exmug" name="exmug" onchange="updateLabel(2);">
+   <span>Mugshot:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+         <label id="exmuglabel" for="exmug" title="None chosen" style="cursor:pointer;">Choose</label>
+   <div class="cancel-go">
+   <img class="dlgclose"
+      style="height:20px; width:20px; margin-top:5px; cursor:pointer;"
+      id="closeextra" onclick="editRevert();" src="/common/close.png">
+   <button type="button" id="exgo">Save</button>
+   </div>
+   </form>
+   <button type="button" id="resetpass" style="width:100%;" onclick="requestPWReset();">Request password reset</button>
+   </div>
+
+   <div id="ecdiv" class="dialog formLayout mexdlg">
+   <h2>Enter your comment</h2>
+   <textarea id="ecta" style="height:100px;"></textarea><br>
+   <div class="cancel-go">
+   <img id="cancelcomment" onclick="handleComment(false);"
+      style="height:20px; width:20px; margin-top:5px; cursor:pointer;"
+      name="ecdlg" id="closelog" src="/common/close.png">
+   <button type="button" id="postcomment" onclick="handleComment(true);">Post Comment</button>
+   </div>
+   </div>
+
+   <div id="feedselect" class="dialog mexdlg" style="font-size:14pt;" data-qs="&rt=latest">
+   <h3>Choose newsfeed view</h3>
+   <ul style="list-style-type: none;">
+   <li style="margin-bottom: 1em;"><input id="fs_latest" type="radio" name="seltype" value="latest" checked><label for="fs_latest">Latest first:</label></li>
+   <li style="margin-bottom: 1em;"><input id="fs_oldest" type="radio" name="seltype" value="oldest"><label for="fs_oldest">Oldest first:</label></li>
+   <li style="margin-bottom: 1em;"><input id="fs_range" type="radio" name="seltype" value="range"><label for="fs_range">Month/Year:</label></li>
+   </ul>
+   <input type="text" id="fs_monthyear"name="monthyear" placeholder="e.g. Jan 2015"; style="font-size:14pt; width:75%; margin-left:1em;"><p>
+   <div class="cancel-go">
+   <img id="cancelfeedselect" onclick="switch2feed();"
+      style="height:20px; width:20px; margin-top:5px; cursor:pointer;" id="closefeedselect" src="/common/close.png">
+
+   <button type="button" id="chooseselect" onclick="setFeedQS();">Apply</button>
+   </div>
+   </div>
+
+   <div id="updatedlg" class="dialog mexdlg" style="display:block;">
+   <h3>Modify or Delete a Post or Comment</h3>
+   <!-- Note that this dialog is irregular - not formLayout -->
+   <input type="hidden" id="updid" value=""  />
+   <textarea id="updatete" style="width:95%; height:200px; margin-bottom:10px; font-size:11pt; overflow:auto"></textarea><br>
+   <div class="cancel-go2">
+   <img class="dlgclose"
+      style="height:20px; width:20px; margin-top:5px; cursor:pointer;"
+      name="updatedlg" onclick="updateHandler(0);" src="/common/close.png">
+   <button id="updateapply" onclick="updateHandler(1);">Apply</button>
+   <button id="updatedel" onclick="updateHandler(2);">Delete item</button>
+   </div>
+   </div>
+
+</div> <!-- dlgcontainer -->
+
+<div id="picdiv" style="position:absolute; left:0px; top:0px; width:100%; background-color: #000; display:none;
+         z-index:10000; background: rgb(0, 0, 0); background: rgba(0, 0, 0, 0.6);">
+   <img class="picdivclose" src="/common/close.png" style="margin:3px 0 0 10px;"/>
+   <img class="picdivclose" src="/common/close.png" style="float:right; margin:3px 10px 0 0;"/><br style="clear:both;"/>
+   <img id="picdivpic" src="" style="margin:10px;"/>
+</div>
+
+<!--<div id="debuginfo"></div>-->
+
+<div id="therest" class="mainpane" style="display:none;">
+
+   <div id="feed" class="hdiv" style="display:none;" data-loaded="N">
+      <div id="logoutdiv" class="topmenu">
+      <span class="menuspan trigger" data-assocdiv="messages">&nbsp;You/Me</span> |
+      <span class="menuspan trigger" data-assocdiv="members">Group</span> |
+      <span class="menuspan" onClick="doLogout();">[-></span>
+      </div>
+
+      <div style="margin:0.5em 0 0.2em 0; height:2.5em; width:100%;">
+      <span id="invite_status" onclick="showEnterStatus(true);" class="invite">What's up?</span>
+      <span id="selectspan" class="clicktext" style="cursor:pointer; border:solid  1px #aaaaaa;"
+                  onclick="switch2feedselect();">Latest</span>
+      </div><br style="clear:both">
+
+      <div id="enter_status"
+         style="border:1px solid #bbbbdd; padding: 2px 0 0 2px; margin:0px 0 5px 2px; width:97%; height:40mm; display:none;">
+         <form id="status_form" method="post" enctype="multipart/form-data" action="/ff/m/status.php">
+         <input type="hidden" id="slogtype" name="logtype" value="1"/>
+         <input type="hidden" id="sdept" name="dept" value="0"/>
+         <input type="hidden" id="contribid" name="contribid" value="0"/>
+         <textarea id="status_te" name="status"
+         placeholder="What's up?" style="border:0; height:25mm; width:99%; margin:2px 0 2px 2px; resize:none;"></textarea>
+         <input name="file" id="file" size="27" type="file" style="display:none;" onchange="updateLabel(0);"/>
+         <button type="button" id="status_cancel" onclick="showEnterStatus(false);"
+            style="color: white; width: 2em; background-color: #ff0000;">X</button>
+         <label id="cflabel" for="file" title="No picture chosen yet" style="cursor: pointer;">Choose picture</label>
+         <button type="button" id="sfgo" style="color: white; background-color: #6666ff;">Post It</button>
+         </form>
+      </div>
+
+      <div id="feedbody"></div> <!-- This will get filled from fillfeed.php -->
+   </div> <!-- feed -->
+
+   <!--  Members div -->
+   <div id="members" class="hdiv" style="display:none;" data-loaded="N">
+      <div id="mmenudiv" class="topmenu">
+      <span class="menuspan trigger" data-assocdiv="feed">&nbsp;Feed</span> |
+      <span id="messtrigger" class="menuspan trigger" data-assocdiv="messages">You/Me</span> |
+      <span id="inditrigger" class="menuspan trigger" style="display:none;" data-assocdiv="individual"></span>
+      <span class="menuspan" onClick="doLogout();">[-></span>
+      </div>
+
+      <h2 style="margin:0.5em 0 0.5em 0; padding:0px;">Group Members</h2>
+      <span class="clicktext" onclick="showRegDlg();">Enrol</span> a new member.<p>
+      <div id="memberlist"></div> <!-- this will get filled by fillmembers.php if it is ever shown -->
+   </div> <!-- members -->
+
+   <!--  Individual div -->
+   <div id="individual" class="hdiv" style="display:none;" data-loaded="N" data-uid="-1">
+      <div id="mmenudiv" class="topmenu">
+      <span class="menuspan trigger" data-assocdiv="feed">&nbsp;Feed</span> |
+      <span class="menuspan trigger" data-assocdiv="messages">You/Me</span> |
+      <span class="menuspan trigger" data-assocdiv="members">Group</span> |
+      </div>
+
+      <h2 id="membername" style="margin:0.5em 0 0.5em 0; padding:0px;">???</h2>
+      <div id="idata"></div> <!-- this will get filled by fillindividual.php if it is ever shown -->
+      <div id="canedit" style="display:none; margin-top:1.2em;"><span class="ullinks"
+                     onclick="switch2edit();">Edit</span> your info.</div><p>
+   </div> <!-- Individual -->
+
+   <!-- Messages div -->
+   <div id="messages" class="hdiv" style="display:none;" data-loaded="N" data-uid="-1">
+      <div id="msgmenudiv" class="topmenu">
+         <span class="menuspan trigger" data-assocdiv="feed">&nbsp;Feed</span> |
+         <span class="menuspan trigger" data-assocdiv="members">Group</span> |
+         <span class="menuspan" onClick="doLogout();">[-></span>
+      </div>
+      <div id="conversation">
+         <div id="msgentry" style="display:block">
+            <textarea id="newmsg" class="msgta" style="width:98%; height:5em;" placeholder="New message"></textarea>
+            <br>
+            <button type="button" id="clearnew" onclick="clearNewMsg();">Clear</button>
+            <button type="button" id="msgo" onclick="postMessage();" style="color: white; background-color: #6666ff;">Post</button>
+            <button type="button" id="tothreads" onclick="toThreads();">Threads</button><br>
+         </div>
+         <!-- List of messages between logged user and selected other user -->
+         <div id="msgcontent" style="display:block">
+            <input type="hidden" id="otherid" value=""></input>
+            <h2 id="between"><span id="msgfrom">?</span> &lt;&gt; <span id="msgto">?</span>.</h3>
+            <div id="themessages"></div>
+         </div>
+      </div>
+      <!-- List of logged user message threads -->
+      <div id="threads" style="display:block;">
+         <h2 style="margin:0.5em 0 0.5em 0; padding:0px;">Message Threads</h2>
+         <div id="threadlist"></div>
+      </div>
+   </div> <!-- Messages div-->
+
+   </div> <!-- settings -->
+</div> <!-- therest -->
+</body>
+</html>
