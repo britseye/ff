@@ -109,8 +109,6 @@ function extraSaved(rv)
       alert(ro.errmsg);
       return;
    }
-   $('#dlgcontainer').hide();
-   $('#therest').show();
    document.getElementById('extra_form').reset();
    $('#exppic').val("N");
    $('#exmpic').val("N");
@@ -118,6 +116,8 @@ function extraSaved(rv)
    $('#excflabel').html("Choose");
    clearFileInput("exmug");
    $('#exmuglabel').html("Choose");
+   $('#individual').attr("data-loaded", "N");
+   switch2indi(userInfo.id);
 }
 
 function submitExtra()
@@ -188,6 +188,7 @@ function setFeedQS()
    [ "fs_latest", "fs_oldest", "fs_range"].forEach(testCheck);
    if (which == "range")
    {
+      $('#feedselect').attr("data-checked", "fs_range");
       my = $('#fs_monthyear').val()
       if (my == "")
       {
@@ -213,13 +214,13 @@ function setFeedQS()
    }
    else if (which == "latest")
    {
-      if ($('#selectspan').html() == "Latest");
-         refill = false;
+      $('#feedselect').attr("data-checked", "fs_latest");
       $('#feedselect').attr("data-qs", "&rt=latest");
       $('#selectspan').html("Latest");
    }
    else
    {
+      $('#feedselect').attr("data-checked", "fs_oldest");
       $('#feedselect').attr("data-qs", "&rt=oldest");
       $('#selectspan').html("Oldest");
    }
@@ -445,33 +446,6 @@ function getMsgStatus()
       msgstatus = parseInt(a[1]);
 }
 
-function doRegister(ret)
-{
-   if (!ret)
-   {
-      alert("Registration failed - sorry");
-      $('#working').hide();
-      $('#dlgcontainer').hide();
-      $('#therest').show();
-      return;
-   }
-	var a = ret.split("+");
-	if (a[0] != "OK")
-	{
-	   //if (a[1] == "Login name is already inuse");
-	   //   return;
-	   alert(a[1]);
-      $('#working').hide();
-      $('#dlgcontainer').hide();
-      $('#therest').show();
-	   return;
-   }
-   alert("User "+a[1]+" was successfully registered.");
-   $('#working').hide();
-   $('#dlgcontainer').hide();
-   $('#therest').show();
-}
-
 function submitRegister()
 {
    var id = $('#ruserid').val();
@@ -491,20 +465,7 @@ function submitRegister()
    return true;
 }
 
-function showRegDlg()
-{
-   $('#ruserid').val("");
-   $('#rpass1').val("");
-   $('#rpass2').val("");
-   $('#remail').val("");
-   $('#remail2').val("");
-   $('#therest').hide();
-   mexDlgShow("regdlg");
-   $('#dlgcontainer').show();
-   $('#ruserid').focus();
-}
-
-function doBevRegister(ret)
+function doRegister(ret)
 {
    if (!ret)
    {
@@ -523,7 +484,7 @@ function doBevRegister(ret)
       $('#therest').show();
 	   return;
    }
-   alert("The new user '"+ro.moniker+"' was successfully created");
+   alert("The new user '"+ro.moniker+"' was successfully registered");
    $('#working').hide();
    $('#dlgcontainer').hide();
    $('#therest').show();
@@ -577,7 +538,7 @@ function doLogin(reply, sticky)
    $('#extra_form').ajaxForm({ success: function(rv) { extraSaved(rv); }, resetForm: true });
 
    $('#reggo').click(function() { submitRegister(); });
-   $('#register_form').ajaxForm({ success: function(rv) { doBevRegister(rv); } });
+   $('#register_form').ajaxForm({ success: function(rv) { doRegister(rv); } });
    // Make sure the encrypted token is sent with each $.ajax() call
    $.ajaxSetup({
        beforeSend: function(xhr) { xhr.setRequestHeader('FF_Token', userInfo.ctToken); }
@@ -792,9 +753,9 @@ function putAppState(st)
 function pushState(state, path)
 {
    if (atInit)
-      history.replaceState(state, "", "?path=members");
+      history.replaceState(state, "", path);
    else
-      history.pushState(state, "", "?path=members");
+      history.pushState(state, "", path);
    atInit= false;
 }
 
@@ -828,6 +789,7 @@ function switch2members()
       appState.component = "";
       pushState(appState, "?path=members");
       putAppState(appState);
+      $('#whence').val("members");
    }
 
    appState = getAppState();
@@ -1018,6 +980,7 @@ function switch2feed()
       appState.component = "";
       pushState(appState, "?path=feed");
       putAppState(appState);
+      $('#whence').val("feed");
    }
 
    appState = getAppState();
@@ -1080,18 +1043,37 @@ function switch2edit()
    });
 }
 
+function switch2register()
+{
+   var appState = getAppState();
+   if (appState.view == "regdlg")
+      return;
+   $('#regdlg').clearForm();
+   document.getElementById("rmug").innerHTML = document.getElementById("rmug").innerHTML;
+   $('#rmuglabel').html('Choose');
+   $('#regsponsor').val(userInfo.id);
+   if (appState.container == "therest")
+   {
+      $('#'+appState.container).hide();
+      $('#dlgcontainer').show();
+   }
+   $('#'+appState.view).hide();
+   mexDlgShow("regdlg");
+   appState.container = "dlgcontainer";
+   appState.view = "regdlg";
+   appState.component = "";
+   appState.otherUid = userInfo.id;
+   pushState(appState, "?path=regdlg");
+   putAppState(appState);
+}
+
 function switch2feedselect()
 {
    var ppState = getAppState();
    if (appState.view == "feedselect")
       return;
-   var s = $('#selectspan').html();
-   if (s == 'Latest')
-      document.getElementById('fs_latest').checked = true;
-   else if (s == 'Oldest')
-      document.getElementById('fs_oldest').checked = true;
-   else
-      document.getElementById('fs_range').checked = true;
+   var rbid = $('#feedselect').attr("data-checked");
+      document.getElementById(rbid).checked = true;
 
    if (appState.container != "dlgcontainer")
    {

@@ -5,15 +5,18 @@ ini_set('display_errors', 'On');
 include_once "not4everyone.php";
 include_once "constants.php";
 include_once "tea.php";
+/*
 include_once "checktoken.php";
 header("Content-type: text/plain");
 if (!$token_ok)
    die("Content blocked.<br>Your security token is invalid\n($token_msg)");
+*/
+header("Content-type: text/plain");
 
 function writeUser($row, $cu)
 {
 
-   $uid = $row[0]; $logtype = $row[1]; $fid = $row[2]; $name = $row[5];
+   $uid = $row[0]; $logtype = $row[1]; $fid = $row[2]; $name = $row[5]; $hru = $row[14];
    $msgs = ($uid == $cu)? "threads": "conversation";
    $s = '<div class="uldiv" style="margin-bottom:1em;">'."\n";
    $s .= '<table style="width:100%;"><tr style="vertical-align:top"><td style="width:15mm;">'."\n";
@@ -29,6 +32,7 @@ function writeUser($row, $cu)
    $s .= '<div style="margin-top:0.3em">'."\n";
    $s .= '<span class="clicktext" style="margin-top:2em;" onclick="switch2messages('."'$msgs'".', '.$uid.');">Messages</span></div>'."\n";
    $s .= "</td></tr></table>\n";
+   $s .= $hru;
    $s .= "</div>\n";
    echo $s;
 }
@@ -37,8 +41,7 @@ $cu = $_GET["cu"];
 
 $db = dbConnect();
 if (!$db) die(sql_error());
-
-$result = $db->query("select * from ffmembers order by ts desc");
+$result = $db->query("select ffmembers.*, ffudetail.hru from ffmembers LEFT JOIN ffudetail ON ffmembers.id = ffudetail.uid order by ts asc");
 if (!$result) die($db->error);
 if ($result->num_rows)
 {

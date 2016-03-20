@@ -72,12 +72,9 @@ function initialize()
 	   fixClix("trigger");
       $('#dlgcontainer').hide();
       $('#therest').show();
-      //$('#feed').show();
-      //$('#feedbody').show();
       var a = location.href.split("?");
       if (a.length == 1)
          switch2feed();
-         //changeState("path=feed");
       else
          changeState(a[1])
    }
@@ -131,6 +128,7 @@ FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
    <h2>Register a New Member</h2>
    <form id="register_form" method="post" enctype="multipart/form-data" action="/ff/m/register.php">
    <input type="hidden" id="regpic" name="regpic" value="">
+   <input type="hidden" id="regsponsor" name="regsponsor" value="">
    <label>User ID:</label><br><input type="text" id="ruserid" name="userid" placeholder="Brief, for login" value=""><br>
    <label>Display name:</label><br><input type="text" id="rusername" name="username" placeholder="e.g. John Doe" value=""><br>
    <label>Password:</label><br><input type="password" id="rpass1" name="pass1" placeholder="6 chars min" value=""><br>
@@ -143,7 +141,7 @@ FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
    <div class="cancel-go">
    <img class="dlgclose"
       style="height:20px; width:20px; margin-top:5px; cursor:pointer;"
-      id="closereg" src="/common/close.png" onclick="revert2members();">
+      id="closereg" src="/common/close.png" onclick="switch2members();">
    <button type="button" id="reggo">Register</button>
    </div>
    </form>
@@ -151,6 +149,7 @@ FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
 
    <div id="extradlg" class="dialog formLayout mexdlg" data-loaded="N" data-cu="">
    <h2>Modify User Details</h2>
+   <input type="hidden" id="whence" value="">
    <form id="extra_form" method="post" enctype="multipart/form-data" action="/ff/m/extradata.php">
    <input type="hidden" id="exid" name="exid" value="">
    <input type="hidden" id="exppic" name="exppic" value="N">
@@ -192,7 +191,7 @@ FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
    </div>
    </div>
 
-   <div id="feedselect" class="dialog mexdlg" style="font-size:14pt;" data-qs="&rt=latest">
+   <div id="feedselect" class="dialog mexdlg" style="font-size:14pt;" data-checked="fs_latest" data-qs="&rt=latest">
    <h3>Choose newsfeed view</h3>
    <ul style="list-style-type: none;">
    <li style="margin-bottom: 1em;"><input id="fs_latest" type="radio" name="seltype" value="latest" checked><label for="fs_latest">Latest first:</label></li>
@@ -277,7 +276,7 @@ FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
       </div>
 
       <h2 style="margin:0.5em 0 0.5em 0; padding:0px;">Group Members</h2>
-      <span class="clicktext" onclick="showRegDlg();">Enrol</span> a new member.<p>
+      <span class="clicktext" onclick="switch2register();">Enrol</span> a new member.<p>
       <div id="memberlist"></div> <!-- this will get filled by fillmembers.php if it is ever shown -->
    </div> <!-- members -->
 
