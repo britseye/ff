@@ -1,11 +1,11 @@
 <?php
 $dbhost = 'localhost';
-$dbuser = 'softcent_admin';
-$dbpwd = 'friday@730';
-$dbdefault = 'softcent_britseye';
+$dbuser = 'whatever';
+$dbpwd = 'whatever';
+$dbdefault = 'whatever';
 
-$ffkey="e3b0c44298fc1c14";
-$ffmark="9afbf4";
+$ffkey="whatever";
+$ffmark="whatever";
 
 $MYSQL_ERROR = '';
 
